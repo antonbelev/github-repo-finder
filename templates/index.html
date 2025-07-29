@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .search-form {
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .repo-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            border-radius: 10px;
+        }
+        .repo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .stats-badge {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .repo-stats {
+            font-size: 0.9em;
+        }
+        .repo-description {
+            color: #6c757d;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-10">
+                <div class="main-container p-4">
+                    <!-- Header -->
+                    <div class="text-center mb-4">
+                        <h1 class="display-4 text-primary mb-2">
+                            <i class="fab fa-github"></i> GitHub Repository Finder
+                        </h1>
+                        <p class="lead text-muted">Discover repositories with specific characteristics and detailed statistics</p>
+                    </div>
+
+                    <!-- Search Form -->
+                    <div class="search-form p-4 mb-4">
+                        <form id="searchForm">
+                            <!-- Search Type Selection -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Search Type</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="searchType" id="generalSearch" value="general" checked>
+                                        <label class="btn btn-outline-primary" for="generalSearch">
+                                            <i class="fas fa-search"></i> General Search
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="searchType" id="javaVersionSearch" value="java-version">
+                                        <label class="btn btn-outline-success" for="javaVersionSearch">
+                                            <i class="fab fa-java"></i> Java Version Search
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- General Search Fields -->
+                            <div id="generalFields">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="query" class="form-label">Search Query</label>
+                                        <input type="text" class="form-control" id="query" placeholder="e.g., machine learning, spring boot">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Searches in repository name, description, and README</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="language" class="form-label">Programming Language</label>
+                                        <select class="form-select" id="language">
+                                            <option value="">Any Language</option>
+                                            <option value="Java">Java</option>
+                                            <option value="Python">Python</option>
+                                            <option value="JavaScript">JavaScript</option>
+                                            <option value="TypeScript">TypeScript</option>
+                                            <option value="C++">C++</option>
+                                            <option value="C#">C#</option>
+                                            <option value="Go">Go</option>
+                                            <option value="Rust">Rust</option>
+                                            <option value="PHP">PHP</option>
+                                            <option value="Ruby">Ruby</option>
+                                        </select>
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Filters repositories by primary language</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="topics" class="form-label">Topics</label>
+                                        <input type="text" class="form-control" id="topics" placeholder="maven, angular, spring">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Comma-separated GitHub topics</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="stars" class="form-label">Minimum Stars</label>
+                                        <input type="number" class="form-control" id="stars" placeholder="100">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Only repos with at least this many stars</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="max_results" class="form-label">Max Results</label>
+                                        <input type="number" class="form-control" id="max_results" value="20" min="1" max="100">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Number of repositories to return</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Java Version Search Fields -->
+                            <div id="javaVersionFields" style="display: none;">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="javaVersion" class="form-label">Java Version</label>
+                                        <select class="form-select" id="javaVersion">
+                                            <option value="8">Java 8 (1.8)</option>
+                                            <option value="11">Java 11</option>
+                                            <option value="17">Java 17</option>
+                                            <option value="21">Java 21</option>
+                                        </select>
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Searches for projects using specific Java version</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="buildTool" class="form-label">Build Tool (Optional)</label>
+                                        <select class="form-select" id="buildTool">
+                                            <option value="">Any Build Tool</option>
+                                            <option value="maven">Maven</option>
+                                            <option value="gradle">Gradle</option>
+                                            <option value="ant">Ant</option>
+                                        </select>
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Filter by build system</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="javaStars" class="form-label">Minimum Stars</label>
+                                        <input type="number" class="form-control" id="javaStars" placeholder="50">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Only repos with at least this many stars</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="javaMaxResults" class="form-label">Max Results</label>
+                                        <input type="number" class="form-control" id="javaMaxResults" value="20" min="1" max="100">
+                                        <div class="form-text"><i class="fas fa-info-circle"></i> Number of repositories to return</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12 text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                                        <i class="fas fa-search"></i> Search Repositories
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div class="loading-spinner text-center py-5">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Searching repositories...</p>
+                    </div>
+
+                    <!-- Results -->
+                    <div id="results" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle search type switching
+        document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const generalFields = document.getElementById('generalFields');
+                const javaVersionFields = document.getElementById('javaVersionFields');
+                
+                if (this.value === 'general') {
+                    generalFields.style.display = 'block';
+                    javaVersionFields.style.display = 'none';
+                } else {
+                    generalFields.style.display = 'none';
+                    javaVersionFields.style.display = 'block';
+                }
+            });
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            let formData;
+            let endpoint;
+            
+            if (searchType === 'general') {
+                formData = {
+                    query: document.getElementById('query').value,
+                    language: document.getElementById('language').value,
+                    topics: document.getElementById('topics').value.split(',').map(t => t.trim()).filter(t => t),
+                    stars: document.getElementById('stars').value,
+                    max_results: document.getElementById('max_results').value
+                };
+                endpoint = '/search';
+            } else {
+                formData = {
+                    java_version: document.getElementById('javaVersion').value,
+                    build_tool: document.getElementById('buildTool').value,
+                    stars: document.getElementById('javaStars').value,
+                    max_results: document.getElementById('javaMaxResults').value
+                };
+                endpoint = '/search-java-version';
+            }
+
+            // Show loading spinner
+            document.querySelector('.loading-spinner').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                // Hide loading spinner
+                document.querySelector('.loading-spinner').style.display = 'none';
+
+                if (data.success) {
+                    displayResults(data.results, data.count);
+                } else {
+                    displayError(data.error);
+                }
+            } catch (error) {
+                document.querySelector('.loading-spinner').style.display = 'none';
+                displayError('Network error: ' + error.message);
+            }
+        });
+
+        function displayResults(results, count) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle"></i> No repositories found matching your criteria.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3><i class="fas fa-list"></i> Found ${count} Repositories</h3>
+                    <span class="badge bg-primary fs-6">${count} results</span>
+                </div>
+                <div class="row g-4">
+            `;
+
+            results.forEach((repo, index) => {
+                const truncatedDesc = repo.description.length > 120 ? 
+                    repo.description.substring(0, 120) + '...' : repo.description;
+                
+                html += `
+                    <div class="col-12 col-lg-6">
+                        <div class="card repo-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">
+                                        <a href="${repo.url}" target="_blank" class="text-decoration-none">
+                                            ${repo.name}
+                                        </a>
+                                    </h5>
+                                    <span class="badge stats-badge">#${index + 1}</span>
+                                </div>
+                                
+                                <p class="repo-description mb-3">${truncatedDesc}</p>
+                                
+                                <div class="row repo-stats mb-3">
+                                    <div class="col-6 col-sm-3 text-center">
+                                        <div class="text-warning"><i class="fas fa-star"></i></div>
+                                        <small class="text-muted">Stars</small>
+                                        <div class="fw-bold">${repo.stars.toLocaleString()}</div>
+                                    </div>
+                                    <div class="col-6 col-sm-3 text-center">
+                                        <div class="text-info"><i class="fas fa-code-branch"></i></div>
+                                        <small class="text-muted">Forks</small>
+                                        <div class="fw-bold">${repo.forks.toLocaleString()}</div>
+                                    </div>
+                                    <div class="col-6 col-sm-3 text-center">
+                                        <div class="text-success"><i class="fas fa-users"></i></div>
+                                        <small class="text-muted">Contributors</small>
+                                        <div class="fw-bold">${repo.contributors}</div>
+                                    </div>
+                                    <div class="col-6 col-sm-3 text-center">
+                                        <div class="text-primary"><i class="fas fa-clock"></i></div>
+                                        <small class="text-muted">Age</small>
+                                        <div class="fw-bold">${repo.age_years}y</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    <span class="badge bg-secondary">${repo.language}</span>
+                                    <span class="badge bg-outline-primary">${repo.commits.toLocaleString()} commits</span>
+                                    <span class="badge bg-outline-warning">${repo.open_issues} issues</span>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Created: ${repo.created_at} | Updated: ${repo.last_updated}
+                                    </small>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-code-branch"></i> ${repo.default_branch} | 
+                                        <i class="fas fa-clock"></i> Last commit: ${repo.last_commit_date}
+                                    </small>
+                                </div>
+                                
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> ${repo.last_commit_author}: 
+                                        <em>${repo.last_commit_message}</em>
+                                    </small>
+                                </div>
+                                
+                                ${repo.topics !== 'None' ? `
+                                    <div class="mt-2">
+                                        <small class="text-muted">Topics: ${repo.topics}</small>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        function displayError(error) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${error}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
