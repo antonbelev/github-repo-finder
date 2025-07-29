@@ -2,6 +2,10 @@
 
 This tool helps you find and analyze GitHub repositories based on specific characteristics.
 
+## Screenshot
+
+![GitHub Repository Finder Interface](screenshots/example.png)
+
 ## Features
 
 ### 🌐 Web Interface
